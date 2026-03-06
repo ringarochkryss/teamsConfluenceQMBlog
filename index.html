@@ -1,39 +1,55 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <title>News</title>
-  <style>
-    body { font-family: sans-serif; margin: 0; padding: 1rem; }
-    #content { max-width: 900px; margin: 0 auto; }
-  </style>
-</head>
-<body>
-  <div id="content">
-    <h1 id="title">Loading...</h1>
-    <div id="blog"></div>
-  </div>
+<script>
+  // Replace with your real Azure Function URL
+  const FUNCTION_URL = "https://your-function.azurewebsites.net/api/getBlogList";
 
-  <script>
-    // Function URL:
-    const FUNCTION_URL = "https://your-function.azurewebsites.net/api/GetBlog";
+  function formatDate(iso) {
+    const d = new Date(iso);
+    return d.toLocaleString();
+  }
 
-    // PageId
-    const BLOG_ID = "VoGwQg";
+  async function loadBlogList() {
+    const container = document.getElementById("blog");
 
-
-    async function loadBlog() {
-      const res = await fetch(`${FUNCTION_URL}?id=${BLOG_ID}`);
+    try {
+      const res = await fetch(FUNCTION_URL);
       if (!res.ok) {
-        document.getElementById("title").innerText = "Sorry, I could not Load this Blog";
+        container.innerText = "Could not load news.";
         return;
       }
-      const data = await res.json();
-      document.getElementById("title").innerText = data.title;
-      document.getElementById("blog").innerHTML = data.html;
-    }
 
-    loadBlog();
-  </script>
-</body>
-</html>
+      const posts = await res.json();
+
+      if (!posts.length) {
+        container.innerText = "No posts yet.";
+        return;
+      }
+
+      container.innerHTML = posts
+        .map(
+          (post, index) => `
+        <article class="post ${index === 0 ? "expanded" : ""}">
+          <h2>${post.title}</h2>
+          <small>${formatDate(post.created)}</small>
+          <div class="post-body">${post.html}</div>
+          <button class="toggle-btn">
+            ${index === 0 ? "Show less" : "Show more"}
+          </button>
+        </article>
+      `
+        )
+        .join("");
+
+      container.addEventListener("click", (e) => {
+        if (e.target.classList.contains("toggle-btn")) {
+          const postEl = e.target.closest(".post");
+          const expanded = postEl.classList.toggle("expanded");
+          e.target.textContent = expanded ? "Show less" : "Show more";
+        }
+      });
+    } catch (err) {
+      container.innerText = "Error loading posts.";
+    }
+  }
+
+  loadBlogList();
+</script>

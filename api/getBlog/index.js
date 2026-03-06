@@ -4,8 +4,9 @@ module.exports = async function (context, req) {
   const baseUrl = process.env.CONFLUENCE_BASE_URL;
   const email = process.env.CONFLUENCE_EMAIL;
   const apiToken = process.env.CONFLUENCE_API_TOKEN;
+  const spaceKey = process.env.CONFLUENCE_SPACE_KEY;
 
-  if (!baseUrl || !email || !apiToken) {
+  if (!baseUrl || !email || !apiToken || !spaceKey) {
     context.res = {
       status: 500,
       body: "Missing Confluence config"
@@ -13,19 +14,11 @@ module.exports = async function (context, req) {
     return;
   }
 
-  const blogId = req.query.id || (req.body && req.body.id);
-  if (!blogId) {
-    context.res = {
-      status: 400,
-      body: "Missing blog id"
-    };
-    return;
-  }
-
   const auth = Buffer.from(`${email}:${apiToken}`).toString("base64");
 
   try {
-    const url = `${baseUrl}/rest/api/content/${blogId}?expand=body.view,title`;
+    const url = `${baseUrl}/rest/api/content?type=blogpost&spaceKey=${spaceKey}&expand=body.view,version&limit=10`;
+
     const response = await axios.get(url, {
       headers: {
         Authorization: `Basic ${auth}`,
@@ -33,21 +26,24 @@ module.exports = async function (context, req) {
       }
     });
 
-    const data = response.data;
+    const posts = response.data.results
+      .sort((a, b) => new Date(b.version.when) - new Date(a.version.when))
+      .map(post => ({
+        id: post.id,
+        title: post.title,
+        created: post.version.when,
+        html: post.body.view.value
+      }));
 
     context.res = {
       headers: { "Content-Type": "application/json" },
-      body: {
-        id: data.id,
-        title: data.title,
-        html: data.body.view.value
-      }
+      body: posts
     };
   } catch (err) {
     context.log(err.response?.data || err.message);
     context.res = {
       status: 500,
-      body: "Error fetching blog from Confluence"
+      body: "Error fetching blog list"
     };
   }
 };
