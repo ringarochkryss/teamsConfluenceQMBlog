@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Blogg i Teams</title>
+  <style>
+    body { font-family: sans-serif; margin: 0; padding: 1rem; }
+    #content { max-width: 900px; margin: 0 auto; }
+  </style>
+</head>
+<body>
+  <div id="content">
+    <h1 id="title">Laddar...</h1>
+    <div id="blog"></div>
+  </div>
+
+  <script>
+    // Sätt ditt Function URL här:
+    const FUNCTION_URL = "https://your-function.azurewebsites.net/api/GetBlog";
+
+    // Hårdkoda ett blogId till att börja med:
+    const BLOG_ID = "123456789"; // byt till ditt riktiga Confluence blog ID
+
+    async function loadBlog() {
+      const res = await fetch(`${FUNCTION_URL}?id=${BLOG_ID}`);
+      if (!res.ok) {
+        document.getElementById("title").innerText = "Kunde inte ladda blogg";
+        return;
+      }
+      const data = await res.json();
+      document.getElementById("title").innerText = data.title;
+      document.getElementById("blog").innerHTML = data.html;
+    }
+
+    loadBlog();
+  </script>
+</body>
+</html>
