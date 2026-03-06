@@ -19,7 +19,8 @@
     const FUNCTION_URL = "https://your-function.azurewebsites.net/api/GetBlog";
 
     // PageId
-    cconst PAGE_ID = "VoGwQg";
+    const BLOG_ID = "VoGwQg";
+
 
     async function loadBlog() {
       const res = await fetch(`${FUNCTION_URL}?id=${BLOG_ID}`);
